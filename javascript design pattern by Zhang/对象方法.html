@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>对象的方法属性</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<script type="text/javascript">
+		var Book = function (id, name, price) {
+			this.id = id;
+			this.name = name;
+			this.price;
+		}
+		Book.num = 12;
+		//Book.prototype.num = 15;
+		console.log(Book.num);
+		var book = new Book("one", "javascript", 50);
+		console.log("book.num:"+book.num);
+		console.log("book.id:"+book.id);
+		book.num = 14;
+		console.log("book.num:"+book.num);
+		
+		console.log(book.num);
+		var book2 = new Book("two", "python", 23);
+		console.log(book2.id);
+		console.log(book2.num);
+
+		//利用闭包实现
+		var Book = (function() {
+				//静态私有变量
+				var bookNum = 0;
+				//静态私有方法
+				function checkBook(name) {}
+				function _book(newId, newName, newPrice) {
+					// 私有变量和方法
+					console.log(this instanceof _book);// true;
+					console.log(this instanceof Book);// true;
+					var name, price;
+					function checkID(id) {}
+					//特权方法；
+					this.getName = function() {};
+					this.getPrice = function() {};
+					this.setName = function() {};
+					this.setPrice = function() {};
+					//共有属性
+					this.id = newId;
+					this.copy = function() {};
+					bookNum++;
+					if ( bookNum > 100 ) throw new Error("我们仅出版100本书");
+					this.setName(name);
+					this.setPrice(price);
+				}
+				//构建原型
+				_book.prototype = {
+					//静态公有属性
+					isJsBook: false,
+					display: function() {}
+				};
+				return _book;
+		})();
+		var newBook = new Book("12", "python", 23);
+		console.log("isJsBook:" + newBook.isJsBook);
+
+		function Car() {
+			this.name = "car";
+			this.type = "BMW";
+		}
+		Car.prototype.getName = function() {
+			console.log(this.name);
+		};
+		//Car.getName();//这里Car.getName不是function。
+		Car.prototype.getName();//这里为毛是undefined。
+		console.log("Car.prototype.getName :"+Car.prototype.getName);
+		console.log("Car.getName :"+Car.getName);
+		BmwCar = new Car();
+		//BmwCar.prototype.getName();这里为何是没有getName这个方法。
+		BmwCar.getName();
+		console.log("BmwCar.getName :"+BmwCar.getName);
+	</script>
+</body>
+</html>

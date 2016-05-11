@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>图片轮播类</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<script type="text/javascript">
+	/*
+	//创建图片轮播基类
+	var LoopImages = function(imgArr, container) {
+		this.imageArray = imgArr;
+		this.container = container;
+		this.createImage = function() {}//创建轮播图片；
+		this.changeImage = function() {}//切换下一张图片
+	};
+
+	//上下滑动切换类
+	var SlideLoopImg = function(imgArr, container) {
+		LoopImages.call(this, imgArr, container);//构造函数继承图片轮播基类；
+		//改写changeImage方法。
+		this.changeImage = function(){
+			console.log("SlideLoopImg changeImage function");
+		}
+	};
+	//渐隐切换类
+	var FadeLoopImg = function(imgArr, container, arrow) {
+		LoopImages.call(this, imgArr, container);
+		this.arrow = arrwo;
+		this.changeImage = function() {
+			console.log("FadeLoopImg changeImage function");
+		}
+	};
+	
+	//将上面的进行改写，基于原型模式。
+
+	var LoopImages = function(imgArr, container) {
+		this.imageArray = imgArr;
+		this.container = container;
+	};
+	LoopImages.prototype = {
+		createImage: function() {},//创建轮播图片
+		changeImage: function() {},//切换图片
+		promt: function() {
+			this.changeImage();
+		}
+	};
+
+	var SlideLoopImg = function(imgArr, container) {
+		LoopImages.call(this, imgArr, container);
+	};
+	SlideLoopImg.prototype = new LoopImages();
+	SlideLoopImg.prototype.changeImage = function() {
+		console.log("SlideLoopImg changeImage function");
+	}
+	var FadeLoopImg = function(imgArr, container, arrow) {
+		LoopImages.call(this, imgArr, container);
+		this.arrow = arrow;
+	}
+	FadeLoopImg.prototype = new LoopImages();
+	FadeLoopImg.prototype.changeImage = function() {
+		console.log("FadeLoopImg changeImage function");
+	};
+	var fadeImg = new FadeLoopImg([1, 2, 3], "slide", ["left.jpg"]);
+	fadeImg.changeImage();
+	fadeImg.promt();
+	*/
+
+	//惰性载入单例,get方法限定了外部只能读取name，不能更改，因为没有提供接口。而publicProperty就可以更改。
+	var LazySingle = (function() {
+		//单例实例引用；
+		var _instance = null;
+		function Single() {
+			/*这里定义私有属性和方法,如：*/
+			var name = "jack";
+			return {
+				publicProperty: "1",
+				get: function() {
+					return name;
+				}
+			}
+		}
+		//获取单例对象接口
+		return function() {
+			//如果单例对象为null，创建单例
+			if ( !_instance ) {
+				_instance = Single();
+			}
+			return _instance;
+		}
+	})();
+	console.log(LazySingle().publicProperty);
+	LazySingle().publicProperty = "2";
+	console.log(LazySingle().get());
+
+	function Validation(content) {
+	this.content = content;
+}
+Validation.prototype = {
+	email: function() {},
+	password: function() {},
+	length: function() {},
+	username: function() {},
+	phone: function() {}
+};
+
+var validateEmail = function(content) {
+	Validation.call(this, content);
+}
+validateEmail.prototype = new Validation();
+validateEmail.prototype.email = function() {
+	var reg = new RegExp( /^\w+((-\w+)|(\.\w))*\@[a-zA-Z0-9]+((\.|-)[a-zA-Z0-9]+)*\.[a-zA-Z0-9]+$/);
+	return reg.test(this.content.replace( /(^\s*)|(\s*$)|\r|\n/g , ""));
+};
+
+var Email = new validateEmail("799@444.at");
+console.log(Email.email());
+</script>
+
+</body>
+</html>

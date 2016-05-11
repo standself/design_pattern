@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>工厂方法模式</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+	<div id="wrapper"></div>
+
+	<script type="text/javascript">
+		var Factory = function(type, content) {
+			if ( this instanceof Factory ) {
+				var s = new this[type](content);
+				return s;
+			} else {
+				return new Factory(type, content);
+			}
+		}
+		Factory.prototype = {
+			button: function(content) {
+				var btn = document.createElement("input");
+				btn.setAttribute("type", "button");
+				btn.setAttribute("value", content)
+				var container = document.getElementById("wrapper");
+				container.appendChild(btn);
+			},
+			radio: function(content) {
+				var btn = document.createElement("input");
+				btn.setAttribute("type", "radio");
+				btn.setAttribute("value", content)
+				var container = document.getElementById("wrapper");
+				container.appendChild(btn);
+			},
+			checkbox: function(content) {
+				var btn = document.createElement("input");
+				btn.setAttribute("type", "checkbox");
+				btn.setAttribute("value", content)
+				var container = document.getElementById("wrapper");
+				container.appendChild(btn);
+			}
+		}
+
+		var data = [
+			{type:"button", content:"btn"},
+			{type:"radio", content:"radio"},
+			{type:"checkbox", content:"checkbox"}
+		]
+		for ( var i=0; i < data.length; i++ ) {
+			Factory( data[i].type, data[i].content);
+		}
+
+
+		var singleton = function(name) {
+			this.name = name;
+			var _instance = null;
+			if ( !_instance ) {
+				_instance = new singleton(name);
+			}
+			return _instance;
+		};
+		var a = singleton("a");
+		var b = singleton("b");
+		console.log("a: " + a.name);
+		console.log("b: " + b.name);
+	</script>
+
+</body>
+</html>
