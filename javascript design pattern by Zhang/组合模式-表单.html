@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>组合模式-表单</title>
+	<meta charset="utf-8"/>
+</head>
+<body>
+
+
+	<script type="text/javascript">
+	//原型式继承
+		function inheritObject(superClass) {
+			function F() {}
+			F.prototype = superClass;
+			return new F();
+		}
+		//寄生式继承
+		function inheritPrototype(obj, superClass) {
+			var o = inheritObject(superClass.prototype);
+			o.constructor = obj;
+			obj.prototype = o;
+		}
+
+	//表单基类
+		function Base() {
+			this.children = [];//子元素容器
+			this.element = null;//当前元素
+		}
+		Base.prototype = {
+			init: function() {
+				throw new Error("请重写你的init方法");
+			},
+			add: function() {
+				throw new Error("请重写你的add方法");
+			},
+			getElement: function() {
+				throw new Error("请重写你的getElement方法");
+			},
+			show: function() {
+				throw new Error("请重写你的show方法");
+			}
+		}
+
+	/*表单组合类：FormItem(id, parent)
+	 *id: 表单的id
+	 *parent:表单的父容器
+	 */
+		var FormItem = function(id, parent) {
+			Base.call(this);
+			this.id = id;
+			this.parent = parent;
+			this.init();
+		}
+		inheritPrototype(FormItem, Base);
+		FormItem.prototype.init = function() {
+			this.element = document.createElement("form");
+			this.element.id = this.id;
+			this.element.className = "new-form";
+		}
+		FormItem.prototype.add = function(child) {
+			this.element.appendChild(child.getElement());//向当前元素插入子元素
+			this.children.push(child);//把子元素加入容器中
+			return this;//返回当前容器，用于链式操作
+		}
+		FormItem.prototype.getElement = function() {
+			return this.element;
+		}
+		FormItem.prototype.show = function(){
+			this.parent.appendChild(this.element);
+		}
+	//表单组合类：FiledsetItem(className, name)
+		var FiledsetItem = function(className, name) {
+			Base.call(this);
+			this.className = className;
+			this.name = name;
+			this.init();
+		}
+		inheritPrototype(FiledsetItem, Base);
+		FiledsetItem.prototype.init = function() {
+			this.element = document.createElement("fieldset");
+			var legend = document.createElement("legend");
+			legend.innerHTML = this.name;
+			this.element.appendChild(legend);
+			this.element.className = this.className || "";
+		}
+		FiledsetItem.prototype.add = function(child) {
+			this.element.appendChild(child.getElement());
+			this.children.push(child);
+			return this;
+		}
+		FiledsetItem.prototype.getElement = function() {
+			return this.element;
+		}
+	//表单组合类：group(className)
+		var Group = function(className) {
+			Base.call(this);
+			this.className = className || "";
+			this.init()
+		}
+		inheritPrototype(Group, Base);
+		Group.prototype.init = function() {
+			this.element = document.createElement("div");
+			this.element.className = this.className || "";
+		}
+		Group.prototype.add = function(child) {
+			this.element.appendChild(child.getElement());
+			this.children.push(child);
+			return this;
+		}
+		Group.prototype.getElement = function() {
+			return this.element;
+		}
+	/*表单成员类:
+	 *InputItem(type, name)
+	 *LabelItem(name, str)
+	 *SpanItem(str)
+	 */
+		var InputItem = function(type, name) {
+			Base.call(this);
+			this.type = type;
+			this.name = name;
+			this.init();
+		}
+		inheritPrototype(InputItem, Base);
+		InputItem.prototype.init = function() {
+			this.element = document.createElement("input");
+			this.element.type = this.type;
+			this.name = name;
+		}
+		InputItem.prototype.getElement = function() {
+			return this.element;
+		}
+
+		var LabelItem = function(name, str) {
+			Base.call(this);
+			this.name = name;
+			this.str = str;
+			this.init();
+		}
+		inheritPrototype(LabelItem, Base);
+		LabelItem.prototype.init = function() {
+			this.element = document.createElement("label");
+			this.element.innerHTML = this.str;
+		}
+		LabelItem.prototype.getElement = function() {
+			return this.element;
+		}
+
+		var SpanItem = function(str) {
+			Base.call(this);
+			this.str = str;
+			this.init();
+		}
+		inheritPrototype(SpanItem, Base);
+		SpanItem.prototype.init = function() {
+			this.element = document.createElement("span");
+			this.element.innerHTML = this.str;
+		}
+		SpanItem.prototype.getElement = function() {
+			return this.element;
+		}
+
+		var TextareaItem = function(str) {
+			Base.call(this);
+			this.str = str;
+			this.init();
+		}
+		inheritPrototype(TextareaItem, Base);
+		TextareaItem.prototype.init = function() {
+			this.element = document.createElement("textarea");
+		}
+		TextareaItem.prototype.getElement = function() {
+			return this.element
+		}
+
+//正式使用
+		var form = new FormItem("form1", document.body);
+		form.add(
+			new FiledsetItem("form-set", "账号").add(
+				new Group("form-set-group").add(
+					new LabelItem("username", "用户名：")
+				).add(
+					new InputItem("username", "username")
+				).add(
+					new SpanItem("4-6位数字或字母")
+				)
+			).add(
+				new Group("form-set-group").add(
+					new LabelItem("password", "密&nbsp;码：")
+				).add(
+					new InputItem("password", "password")
+				).add(
+					new SpanItem("6-12位数字或者密码")
+				)
+			)
+		).show();
+	</script>
+
+
+</body>
+</html>
