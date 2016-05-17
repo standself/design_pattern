@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>观察者模式</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+
+<script type="text/javascript">
+//观察者，将它放在闭包中，页面加载就立即执行
+	var Observer = (function() {
+		//消息容器，以静态私有变量形式存在，防止暴露于外部而被篡改
+		var _messages = {};
+		return {
+			//注册信息窗口
+			regist: function(type, fn) {
+				//如果该消息类型不存在，就创建一个该消息类型
+				if ( typeof _messages[type] === "undefined" ) {
+					//将动作推入到对应类型的消息队列中
+					_messages[type] = [fn];
+				} else {
+					//如果存在，就把动作推入到该类型的消息队列
+					_messages[type].push(fn);
+				}
+			},
+			//发布信息窗口
+			fire: function(type, args) {
+				//判断该消息类型注册与否，没有注册，直接返回
+				if ( !_messages[type] ) return;
+				//定义消息信息
+				var events = {
+					type: type,
+					args: args || {}
+				},
+				i = 0,
+				len = _messages[type].length;//注意regist里面的_messages[type]是数组
+				//遍历消息动作
+				for( ; i < len; i++ ) {
+					//依次执行消息队列中对应的动作方法
+					_messages[type][i].call(this, events);
+				}
+			},
+			//移除信息窗口
+			remove: function(type, fn) {
+				//判断消息类型中动作队列存在与否
+				if ( _messages[type] instanceof Array ) {
+					//从后面往前面遍历
+					var i = _messages[type].length - 1;
+					for( ; i >= 0; i-- ) {
+						//如果该动作存在，就移除
+						_messages[type][i] === fn && _messages[type].splice(i, 1);//短值法
+					}
+				}
+			},
+			getMsg: function() {
+				console.log(_messages);
+				return _messages;
+			}
+		}
+	})();
+
+//多个模块之间的观察者和订阅者的实现
+/*
+	//外观模式， 简化获取元素
+	function $(id) {
+		return document.getElementById(id);
+	}
+
+	//工程师A
+	(function() {
+		//追加一则消息
+		function addMsgItem(e) {
+			var text = e.args.text,							//获取消息中用户添加的文本内容
+				ul = $("msg"),								//留言容器元素
+				li = document.createElement("li"),			//创建内容容器元素
+				span = document.createElement("span");		//删除按钮
+			li.innerHTML = text;							//写入评论
+			//关闭按钮
+			span.onclick = function() {
+				ul.removeChild(li);
+				//发布删除留言消息
+				Observer.fire("removeCommentMessage", {num:-1});
+			}
+			//添加删除按钮，留言节点
+			li.appendChild(span);
+			ul.appendChild(li);
+		}
+		Observer.regist("addCommentMessage", addMsgItem);
+	})();
+
+	//工程师B
+	(function(){
+		//更改用户消息数目
+		function changeMsgNum(e) {
+			//获取要增加的用户消息数目
+			var num = e.args.num;
+			//增加用户消息数目并写入页面中
+			$("msg_num").innerHTML = parseInt($("msg_num").innerHTML) + num;
+		}
+		//注册添加评论消息
+		Observer.regist("addCommentMessage", changeMsgNum);
+		Observer.regist("removeCommentMessage", changeMsgNum);
+	})();
+
+	//工程师C
+	(function() {
+		//用户点击提交按钮
+		$("user_submit").onclick = function() {
+			//获取用户输入框中输入的信息
+			var text = $("user_input");
+			if ( text.value === "" ) {
+				return;
+			}
+			//发布一则评论消息
+			Observer.fire("addCommentMessage", {
+				text: text.value,	//消息评论内容
+				num: 1				//消息评论数目
+			});
+			text.value = "";		//将输入框重设为空
+		}
+	})();
+
+	console.log(Observer.regist);
+	Observer.regist("test", function(e) {
+		console.log(e.type, e.args.msg);
+	});
+	Observer.fire("test", {msg: "传递参数"});
+*/
+
+//对象之间的观察者和订阅者解耦
+	//学生类
+	var Student = function(result) {
+		var that = this;
+		//学生回答问题
+		that.result = result;
+		that.say = function() {
+			console.log(that.result);
+		}
+	}
+	Student.prototype.answer = function(question) {
+		//注册参数问题
+		Observer.regist(question, this.say);
+	}
+	Student.prototype.sleep = function(question) {
+		//删除对该问题的监听
+		Observer.remove(question, this.say);
+	}
+
+	var Teacher = function() {};
+	Teacher.prototype.ask = function(question) {
+		console.log("问题是：" + question);
+		Observer.fire(question);
+	}
+
+	var student1 = new Student("学生1回答问题");
+	var student2 = new Student("学生2回答问题");
+	var student3 = new Student("学生3回答问题");
+	student1.answer("什么是设计模式");
+	student1.answer("简述观察者模式");
+	student2.answer("什么是设计模式");
+	student3.answer("什么是设计模式");
+	student3.answer("简述观察者模式");
+
+	student3.sleep("简述观察者模式");
+
+	var teacher = new Teacher();
+	teacher.ask("什么是设计模式");
+	teacher.ask("简述观察者模式");
+	var messages = Observer.getMsg();
+	for ( attr in messages ) {
+		var len = messages[attr].length;
+		for ( var i = 0; i < len; i++ ) {
+			console.log(attr + " i:" + i + "  " + messages[attr][i]);
+		}
+	}
+</script>
+
+</body>
+</html>

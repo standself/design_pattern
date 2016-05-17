@@ -3,6 +3,11 @@
 <head>
 	<title>模板方法模式</title>
 	<meta charset="utf-8" />
+	<style>
+		.right {
+			float: left;
+		}
+	</style>
 </head>
 <body>
 <div id="content" style="height: 100px; width: 100px; border: 1px solid blue;"></div>
@@ -129,8 +134,8 @@
 			me.hide();
 		}
 	}
-
-	new CancelAlert(
+	//右侧取消按钮提示框
+	var newRight = new CancelAlert(
 		{
 			title: "提示标题",
 			content: "提示内容",
@@ -141,7 +146,9 @@
 				console.log("cancel");
 			}
 		}
-	).init();
+	);
+	newRight.cancelBtn.className = newRight.className + " right";
+	newRight.init();
 
 //创建多类导航
 	//格式化字符串方法
