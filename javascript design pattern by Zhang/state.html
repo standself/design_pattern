@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>状态模式</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+<script type="text/javascript">
+	var MarryState = function() {
+		//内部私有变量，存储状态
+		var _currentState = {},
+			//动作与状态方法映射
+			states = {
+				jump: function() {
+					//跳跃
+					console.log("jump");
+				},
+				move: function() {
+					console.log("move");//移动
+				},
+				shoot: function() {
+					console.log("shoot");
+				},
+				squat: function() {
+					console.log("squat");//蹲下
+				}
+			};
+		//动作控制类
+		var Action = {
+			//状态变化方法
+			changeState: function() {
+				var args = arguments;
+				//重置内部状态
+				_currentState = {};
+				//如果有动作则添加动作
+				if ( args.length ) {
+					//遍历动作
+					for ( var i = 0; i < args.length; i++ ) {
+						_currentState[args[i]] = true;
+					}
+				}
+				return this;//返回控制类
+			},
+			goes: function() {
+				console.log("执行一次动作");
+				//遍历内部状态保存的动作
+				for ( var i in _currentState ) {
+					//如果该动作存在就执行
+					states[i] && states[i](); 
+				}
+				return this;
+			}
+		}
+		return {
+			change: Action.changeState,
+			goes: Action.goes
+		}
+	}
+
+	var marry = new MarryState();
+	marry
+		.change("jump", "shoot").goes().goes()
+		.change("shoot").goes()
+		.change("jump", "shoot").goes();
+</script>
+
+</body>
+</html>
