@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>命令模式</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+<div id="product" style="border: 1px solid blue; height: 100px; width: 100px;"></div>
+<canvas id="canvas" style="border:1px solid red; height: 500px; width: 500px; margin: 40px;"></canvas>
+<script type="text/javascript">
+//命令模式的2个用途：一个是多视图的创建；一个是用于解耦
+
+//多视图的创建
+//模块实现模块
+	var viewCommand = (function() {
+		//格式化字符串模板创建页面元素
+		var tpl = {
+			//展示图片结构模板
+			product: [
+				"<div>",
+					"<img src='{#src#}'/>",
+					"<p>{#text#}</p>",
+				"</div>"
+			].join(""),
+			//展示标题结构模板
+			title: [
+				"<div class='title'",
+					"<div class='main'>",
+						"<h2>{#title#}</h2>",
+						"<p>{#tips#}</p>",
+					"</div>",
+				"</div>"
+			].join("")
+		};
+		html = "";
+		//格式化字符串 如：<div>{#content#}</div 用{content: "demo"}替换后可得到字符串 <div>demo</div>
+		function formateString(str, obj) {
+			//替换"{#"和"#}"之间的字符 
+			return str.replace(/\{#(\w+)#\}/g, function(match, key) {
+				return obj[key];
+			})
+		}
+		//方法集合
+		var Action = {
+			//创建方法
+			create: function(data, view) {
+				//解析数据 如果数据是一个数组
+				if ( data.length ) {
+					//遍历数组
+					for ( var i = 0, len = data.length; i < len; i++ ) {
+						html += formateString(tpl[view], data[i]);
+					}
+				} else {
+					//直接格式化字符串缓存到html中
+					html += formateString(tpl[view], data);
+				}
+			},
+			//展示方法
+			display: function(container, data, view) {
+				//如果传入数据
+				if ( data ) {
+					this.create(data, view);
+				}
+				//展示模块
+				document.getElementById(container).innerHTML = html;
+				//清空展示后的字符串缓存
+				html = "";
+			},
+		};
+		//命令接口
+		return function excute(msg) {
+			//解析命令，如果msg。param 不是数组就将其转化为数组（apply的第二个参数要求为数组）
+			msg.param = Object.prototype.toString.call(msg.param) === "[object Array]" ? msg.param : [msg.param];
+			//Action内部调用的方法引用this，所以此处为保证作用域this执行传入Action
+			Action[msg.command].apply(Action, msg.param);
+		}
+	})();
+
+//测试
+	//产品展示数据
+	var productData = [
+		{
+			src: "1.jpg",
+			text: "绽放的野菊花"
+		},
+		{
+			src: "1.jpg",
+			text: "犹豫的蓝喇叭"
+		},
+	],
+	//模块标题数据
+	titleData = {
+		title: "夏日里的一片草原",
+		tips: "feelings at home"
+	};
+	viewCommand({
+		command: "display",
+		param: ["product", productData, "product"]
+	});
+
+
+//命令模式用于解耦
+//canvas中绘图上下文引用的解耦
+	var CanvasCommand = (function() {
+		//获取canvas
+		var canvas = document.getElementById("canvas");
+		//缓存上下文引用至 canvasCommand的ctx中
+		var ctx = canvas.getContext("2d");
+		//内部方法对象
+		var Action = {
+			//填充色彩
+			fillStyle: function(c) {
+				ctx.fillStyle = c;
+			},
+			//填充矩形
+			fillRect: function(x, y, width, height) {
+				ctx.fillRect(x, y, width, height);
+			},
+			//描边色彩
+			strokeStyle: function(c) {
+				ctx.strokeStyle = c;
+			},
+			//描边矩形 
+			strokeRect: function(x, y, width, height) {
+				ctx.strokeRect(x, y, width, height);
+			},
+			//填充字体 
+			fillText: function(text, x, y) {
+				ctx.fillText(text, x, y);
+			},
+			//开启路径
+			beginPath: function() {
+				ctx.beginPath();
+			},
+			closePath: function() {
+				ctx.closePath();
+			},
+			//移动画笔触电
+			moveTo: function(x, y) {
+				ctx.moveTo(x, y);
+			},
+			//画笔连线
+			lineTo: function(x, y) {
+				ctx.lineTo(x, y);
+			},
+			//绘制弧线
+			arc: function(x, y, r, begin, end, dir) {
+				ctx.arc(x, y, r, begin, end, dir);
+			},
+			//填充
+			fill: function() {
+				ctx.fill();
+			},
+			//描边 
+			stroke: function() {
+				ctx.stroke();
+			}
+		}
+		return {
+			//命令接口
+			excute: function(msg) {
+				//如果没有指令返回
+				if ( !msg ) return;
+				//如果指令是一个数组
+				if ( msg.length ) {
+					//遍历执行多个命令
+					for ( var i = 0, len = msg.length; i < len; i++ ) {
+						arguments.callee(msg[i]);//由于这里的函数主体为匿名函数，不能用函数名进行递归调用。用callee进行递归调用
+					//执行一个命令
+					}
+				} else {
+						//如果msgparam不是一个数组，将其转化为数组
+						msg.param = Object.prototype.toString.call(msg.param) === "[object Array]" ? msg.param : [msg.param];
+						Action[msg.command].apply(Action, msg.param);
+				} 
+			}
+		}
+	})();
+//测试
+	CanvasCommand.excute([
+		{command: "beginPath"},
+		{command: "fillStyle", param: "red"},
+		{command: "arc", param: [80, 80, 40, 0, Math.PI*1, true]},
+		{command: "closePath"},
+		{command: "fill"}
+	]);
+</script>
+
+</body>
+</html>
