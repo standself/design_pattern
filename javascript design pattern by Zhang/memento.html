@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>备忘录模式</title>
+	<meta charset="utf-8"/>
+</head>
+<body>
+
+<script type="text/javascript">
+//建立备忘录类，将已经请求过的数据缓存下来，在下一次需要改数据时，直接从缓存里面获取，不再进行请求。这样就减少了请求，减少交互中间时间。
+//page备忘录类
+	var page = function() {
+		var cache = {};
+		/***
+		 *主函数
+		 *参数 page 	页码
+		 *参数 fn 		回调函数
+		 ***/
+		return function(page, fn) {
+			if ( cache[page] ) {
+				showPage(page, cache[page]);
+				fn && fn();
+			} else {
+				$.post("./data/getNewsData.php", { page: page }, function(res) {
+					if ( res.errNo == 0 ) {
+						showPage(page, res.data);
+						cache[page] = res.data;
+						fn && fn();
+					} else {
+						//处理异常
+					}
+				})
+			}
+		}
+	}
+	var c = 2;
+	if ( --c > 0) {
+		console.log(c);
+	}
+	console.log(c);
+</script>
+
+
+</body>
+</html>

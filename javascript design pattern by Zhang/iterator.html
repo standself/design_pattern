@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>迭代器模式</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+<ul id="container">
+	<li>1</li>
+	<li>2</li>
+	<li>3</li>
+	<li>4</li>
+</ul>
+<script type="text/javascript">
+//在不暴露对象内部结构时，对其进行顺序访问内部元素。减少循环的代码的重复书写
+//图片动图效果迭代器
+	var Iterator = function(items, container) {
+		//如果传入了父容器的id，就根据id来获取父容器；否则设置为document。
+		var container = container && document.getElementById(container) || document;
+		var items = container.getElementsByTagName(items),
+			length = items.length,
+			//当前索引值，默认为 0;
+			index = 0;
+		var splice = [].splice;
+		return {
+			//获取第一个元素
+			first: function() {
+				index = 0;
+				return items[index];
+			},
+			last: function() {
+				index = length - 1;
+				return items[index];
+			},
+			pre: function() {
+				//如果索引值大于0， 就获取对应的元素，否则的话，就把索引设为默认值，返回空
+				if ( --index > 0 ) {
+					return items[index];
+				} else {
+					index = 0;
+					return null;
+				}
+			},
+			next: function() {
+				// 如果索引值小于长度，获取对应元素，否则设为长度-1，返回空
+				if ( ++index < length ) {
+					return items[index];
+				} else {
+					index = length - 1;
+					return null;
+				}
+			},
+			get: function(num) {
+				//如果num为正，就从正序获取，num为负，就从倒序获取
+				index = num >= 0 ? num % length : num % length + length;
+				return items[index];
+			},
+			dealEach: function(fn) {
+				//第一个参数是fn，从第2个参数开始才是fn的参数。
+				var args = splice.call(arguments, 1);
+				for ( var i = 0; i < length; i++ ) {
+					fn.apply(items[i], args);
+				}
+			},
+			dealItem: function(num, fn) {
+				fn.apply(this.get(num), splice.call(arguments, 2));
+			},
+			exclusive: function(num, allFn, numFn) {
+				this.dealEach(allFn);
+				if ( Object.prototype.toString.call(num) === "[object Array]" ) {
+					for ( var i = 0; i < num.length; i++ ) {
+						this.dealItem(num[i], numFn);
+					}
+				} else {
+					this.dealItem(num, numFn);
+				}
+			}
+		}
+	}
+	//test
+	var demo = new Iterator("li", "container");
+	console.log(demo.pre());
+	console.log(demo.first());
+	console.log(demo.get(2000));
+	demo.dealItem(2, function() {
+		this.style.color = "red";
+	});
+	demo.dealEach(function(){
+		this.style.textDecoration = "underline";
+	})
+
+//数组对象迭代器
+	var eachObj = function(arr, fn) {
+		var typel = Object.prototype.toString.call(arr);
+		if ( typel === "[object Array]" ) {
+			var i = 0,
+				len = arr.length;
+				for ( ; i < len; i++ ) {
+					if ( fn.call(arr[i], i, arr[i]) === false ) break;
+				}
+		} else if ( typel === "[object Object]" ) {
+			for ( var i in arr) {
+				if ( fn.call(arr[i], i, arr[i]) === false ) break; 
+			}
+		}
+	}
+	//test
+	var num = [1, 2, 3, 4, 6],
+		obj = {
+			1: 2,
+			2: 3,
+			3: 4
+		};
+	eachObj(num, function(i, data) {
+		console.log(i, data);
+	});
+	eachObj(obj, function(i,data) {
+		console.log(i + " " +data);
+	});
+
+//同步变量迭代器：同步变量是指页面加载时打印到页面中的变量。由于这些变量不一定会被正确地打印，如果直接用点语法或【】进去获取会报错。
+//而层层做校验又费代码。此时可以用代码迭代器。
+	var  Getter = function(A, key) {
+		var result = A;
+		key = key.split(".");
+		for ( var i = 0; i < key.length; i++ ) {
+			if ( result[key[i]] !== undefined ) {
+				result = result[key[i]];
+			} else {
+				return undefined;
+			}
+		}
+		return result;
+	};
+	var Setter = function(A, key, arr) {
+		var result = A;
+		key = key.split(".");
+		for ( var i = 0; i < key.length; i++ ) {
+			if ( result[key[i]] !== undefined ) {
+				result = result[key[i]];
+			} else {
+				return "the attr "+ arr + " of " + result + " is undefined";
+			}
+		}
+		return result = arr;
+	}
+	//test
+	var A = {
+		common: {},
+		client: {
+			user: {
+				username: "yueye",
+				uid: "123"
+			}
+		},
+		server: {}
+	}
+	console.log(Getter(A, "client.user.username"));
+	console.log(Setter(A, "client.user.username.sport", "john"));
+
+</script>
+
+</body>
+</html>
