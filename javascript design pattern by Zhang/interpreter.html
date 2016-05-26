@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>解释器模式</title>
+	<meta charset="utf-8" />
+</head>
+<body>
+<div></div>
+<span></span>
+<img src=""/>
+<div></div>
+<div  id="here3">
+	<ul>
+		<li>3</li>
+		
+	</ul>
+	<ul>
+		<li>1</li>
+		<span>dianwo</span>
+		<li>0</li>
+		<span></span>
+		<li>2</li>
+		
+	</ul>
+	<ul>
+		
+		<li>2</li>
+		<span>
+			<ul>
+				<li>2</li>
+			</ul>
+		</span>
+		<li>2</li>
+		
+	</ul>
+</div>
+<script type="text/javascript">
+//解释器：在一个给定的规则下，对给定的数据运用该规则，得出结果。解释器的作用就是实现这种规则。
+	
+//xpath 解释器
+	var Interpreter = (function() {
+		//获取兄弟元素名称
+		function getSublingName(node) {
+			//如果存在兄弟元素
+			if ( node.previousSibling ) {
+				var name = "",//返回的兄弟元素名称字符串
+					count = 1,//紧邻兄弟元素中相同名称元素个数
+					nodeName = node.nodeName,
+					sibling = node.previousSibling;
+				while ( sibling ) {
+					//如果节点为元素 且节点类型与前一个兄弟元素类型相同，并且前一个兄弟元素的名称存在
+					if ( sibling.nodeType == 1 && sibling.nodeType === node.nodeType && sibling.nodeName ) {
+						if ( nodeName == sibling.nodeName ) {
+							name += ++count;
+						} else {
+							//重置相同紧邻节点名称节点个数
+							count = 1;
+							name += "|" + sibling.nodeName.toUpperCase();
+						}
+					}
+					sibling = sibling.previousSibling;
+				}
+				return name;
+			} else {
+				return "";
+			}
+		}
+
+		return function(node, wrap) {
+			//路径数组
+			var path = [],
+			//如果不存在容器节点，就默认为document
+				wrap = wrap || document;
+			//如果当前（目标）节点等于容器节点
+			if ( node === wrap ) {
+				// 容器节点为元素
+				if ( wrap.nodeType === 1 ) {
+					//路径数组中输入容器节点名称
+					path.push(wrap.nodeName.toUpperCase());
+				}
+				return path;
+			}
+			//如果当前节点的父节点不是容器节点 
+			if( node.parentNode !== wrap ) {
+				//对当前节点的父节点执行遍历操作
+				path = arguments.callee(node.parentNode, wrap);
+			} else {
+			//如果当前节点的父元素节点与容器节点相同
+				//容器节点为元素
+				if ( wrap.nodeType === 1 ) {
+					//路径数组中输入容器节点名称
+					path.push(wrap.nodeName.toUpperCase());
+				}
+			}
+			//获取元素的兄弟名称统计
+			var sublingNames = getSublingName(node);
+			//如果节点为元素 
+			if ( node.nodeType === 1 ) {
+				//输入当前节点元素名称及其前面兄弟元素名称统计
+				path.push(node.nodeName.toUpperCase() + sublingNames);
+			}
+			//返回最终路径数组结果
+			return path;
+		}
+	})();
+
+	//test
+	var li = document.getElementById("here3");
+	var path = Interpreter(li);
+	console.log(path.join(">"));
+
+//事件目标对象到事件源对象
+	var EventInterpreter = function(target, elem) {
+		var path = [];
+		//如果target就是elem
+		if ( target === elem ) {
+			path.push(elem.nodeName);	
+			return path;
+		} else {
+			var parent = target.parentNode;
+			path.push(target.nodeName);
+			path.push(parent.nodeName);
+			// 如果parent不是elem，就把parent的节点名加入path。
+			do {
+				parent = parent.parentNode;
+				path.push(parent.nodeName);
+			}
+			while ( parent != elem );
+			return path;
+		}
+	}
+	//
+	var ul = document.getElementById("here3");
+	ul.onclick = function(e) {
+		var e = e || document.event,
+			target = e.target || e.srcElement;
+		var path = EventInterpreter(target, this);
+		console.log(path.join(">"));
+	}
+</script>
+
+</body>
+</html>
