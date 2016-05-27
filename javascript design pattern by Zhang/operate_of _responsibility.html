@@ -118,12 +118,91 @@
 			return str.replace(/[\_\-](\w)/g, function(all, letter) {
 				return letter.toUpperCase();
 			});
+		},
+		//设置css样式
+		css: function() {
+			var arg = arguments,
+				len = arguments.length;
+			console.log(this.length);
+			if ( this.length < 1 ) {
+				return this;
+			}
+			//只有一个参数时
+			if ( len === 1 ) {
+				if ( typeof arg[0] === "string" ) {
+					//IE
+					if ( this[0].currentStyle ) {
+						return this[0].currentStyle[name];
+					} else {
+						return getComputedStyle(this[0], false)[name];
+					}
+				} else if ( typeof arg[0] === "object" ) {
+					for ( var i in arg[0] ) {
+						for( var j = this.length -1; j >= 0; j--)
+							this[j].style[A.fn.camelCase(i)] = arg[0][i];
+						
+					}
+				}
+			} else if ( len === 2 ) {
+				for ( var j = this.length - 1; j >= 0; j-- ) {
+					this[j].style[A.fn.camelCase(arg[0])] = arg[1];
+				}
+			}
+			return this;
+		},
+		//设置属性
+		attr: function() {
+			var arg = arguments,
+				len = arg.length;
+			//小于1表示没有选取到元素
+			if ( this.length < 1 ) {
+				return this;
+			}
+			//如果一个参数，就是获取属性值
+			if ( len === 1 ) {
+				//是字符串的话，就获取第一个元素属性
+				if ( typeof this[0] === "string" ) {
+					return this[0].getAttribute(arg[0]);
+				} else if ( typeof arg[0] === "object" ) {
+					for ( var i in arg[0] ) {
+						for ( var j = this.length -1; j >= 0; j-- ) {
+							this[j].setAttribute(i, arg[0][i]);
+						}
+					}
+				}
+			} else if ( len === 2 ) {
+				for( var j = this.length - 1; j >= 0; j-- ) {
+					this[j].setAttribute(arg[0], arg[1]);
+				}
+			}
+			return this;
+		},
+		html: function() {
+			var arg = arguments,
+				len = arg.length;
+			//无参数就获取第一个元素的内容
+			if ( len === 0 ) {
+				return this[0] && this[0].innerHTML;
+			//只有一个参数就设置每一个元素的内容
+			} else {
+				for ( var i = this.length -1; i >= 0; i-- ) {
+					this[i].innerHTML = arg[0];
+				}
+			}
+			return this;
 		}
 	});
 	var str = "background-color";
 	var str2 = "background_color";
 	console.log(A.fn.camelCase(str));
 	console.log(A.fn.camelCase(str2));
+	A("#demo")
+		.css({
+			height: "400px",
+			border: "1px solid yellow",
+			"background-color": "red"
+		})
+		.html("add demo text");
 </script>
 </body>
 </html>
