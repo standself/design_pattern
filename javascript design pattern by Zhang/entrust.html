@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>委托模式</title>
+	<meta charset="utf-8"/>
+</head>
+<body>
+<div>
+	<p>这里是段落</p>
+	<button>点我</button>
+</div>
+
+<script type="text/javascript">
+	/***
+	 *函数名 delegate
+	 *参数 dom		被委托的元素
+	 *参数 ele		委托的元素
+	 *参数 type		事件类型
+	 *参数 fn 		回调函数
+	 ***/
+	function delegate(dom, ele, type, fn) {
+		dom.addEventListener(type, function(e) {
+			var e = e || document.event,
+				target = e.target || e.srcElement;
+			console.log(target.nodeName);
+			if ( target.nodeName === ele.toUpperCase() ) {
+				fn();
+			}
+		}, true);
+	}
+	var dom = document.getElementsByTagName("div")[0];
+	delegate(dom, "button", "click",function() {
+		console.log("委托成功");
+	});
+	dom.onclick = function(){
+		console.log(dom.nodeName);
+	};
+	var storage = localStorage || window.localStorage;
+	console.log(storage);
+</script>
+
+</body>
+</html>
