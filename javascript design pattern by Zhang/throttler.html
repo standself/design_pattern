@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>节流模式</title>
+	<meta charset="utf-8"/>
+</head>
+<body>
+<div id="icon" class="icon" style="height: 200px; width: 200px; border: 1px solid blue; background-color: silver;">
+	<ul class="icon">
+		<li class="weixin"></li>
+		<li class="weibo"></li>
+	</ul>
+	<div class=" ">
+		<img class="show" src="" alt="微信图片"/>
+		<img src="" alt="微博图标"/>
+		<span class="arrow"><em></em></span>
+	</div>
+</div>
+<button id="btn">点这里啊</button>
+
+<script type="text/javascript">
+//节流模式： 对重复的业务逻辑进行节流控制，执行最后一次操作并取消其他操作，用以提高性能。核心在于创建计时器，延迟程序的执行。当前一个动作的执行还在计时中，下一个动作开始时，直接消除前一个动作，执行最后一个动作。这个消除就是通过计时器的消除来实现的。
+
+
+//节流器
+	//拓展函数
+	/***
+	 * 参数 target 被拓展
+	 * 参数 obj 	拓展源
+	 ***/
+	function extend(target, obj) {
+		for ( var arr in obj ) {
+			target[arr] = obj[arr];
+		}
+		return target;
+	}
+	//节流器
+	var throttle = function() {
+		//获取第一个参数
+		var isClear = arguments[0], fn;
+		//如果第一个参数是boolean类型，那么第一个参数则表示是否清除计时器
+		if ( typeof isClear === "boolean" ) {
+			//第二个参数则为函数
+			fn = arguments[1];
+			//函数的计时器句柄存在，就清除该计时器
+			fn.__throttleID && clearTimeout(fn.__throttleID);
+		//通过计时器延迟函数的执行
+		} else {
+			//第一个参数为函数
+			fn = isClear;
+			//第二个参数为函数执行时的参数
+			param = arguments[1];
+			//对执行时的参数适配默认值
+			var p = extend({
+				context: null,		//执行函数执行时的作用域
+				args: [],			//执行函数执行时的相关参数，ie下要为数组
+				time: 300			//执行函数延迟执行的时间
+			}, param);
+			//清除执行函数计时器句柄
+			arguments.callee(true, fn);
+			//为函数绑定计时器句柄，延迟执行函数
+			fn.__throttleID = setTimeout(function() {
+				//执行函数
+				fn.apply(p.context, p.args)
+			}, p.time);
+		}
+	}
+
+
+
+//优化浮层
+	//外观模式封装获取元素方法
+	function $(str, container) {
+		container = container || document;
+		if ( str[0] == "#" ) {
+			 return container.getElementById(str.slice(1, str.length));
+		} else {
+			return container.getElementsByTagName(str);
+		}
+	}
+
+	//浮层类
+	var Layer = function(id) {
+		//获取容器
+		this.container = $(id);
+		//获取浮层容器
+		this.layer = $("div", this.container)[0];
+		//获取icon容器
+		this.lis = $("li", this.container);
+		//获取二维码图片
+		this.imgs = $("img", this.container);
+		//绑定事件
+		this.bindEvent();
+	}
+	Layer.prototype = {
+		//绑定事件
+		bindEvent: function() {
+			//缓存当前对象
+			var that = this;
+			//隐藏浮层
+			function hideLayer() {
+				that.layer.className = "";
+				console.log("hideLayer");
+			}
+			//显示浮层
+			function showLayer() {
+				that.layer.className = "show";
+				console.log("showLayer");
+			}
+			//鼠标光标移入时间
+			that.on(that.container, "mouseenter", function() {
+				//清除隐藏浮层方法计时器
+				throttle(true, hideLayer);
+				//延迟显示浮层方法
+				throttle(showLayer);
+			}).on(that.container, "mouseleave", function() {
+				//延迟浮层隐藏方法
+				throttle(hideLayer);
+				throttle(true, showLayer);
+			});
+			//遍历icon绑定事件
+			for ( var i = 0; i < that.lis.length; i++ ) {
+				//自定义属性index
+				that.lis[i].index = i;
+				//为每一个li元素绑定鼠标移入事件
+				that.on(that.lis[i], "mouseenter", function() {
+					//获取自定义属性index
+					var index = this.index;
+					//排除所有img的show类
+					for ( var i = 0; i < that.imgs.length; i++ ) {
+						that.imgs[i].className = "";
+					}
+					//为目标图片设置show类
+					that.imgs[index].className = "show";
+					//重新定义浮层位置
+					that.layer.style.left = -22 + 60 * index + "px";
+				})
+			}
+		},
+		//事件绑定方法
+		on: function(ele, type, fn) {
+			ele.addEventListener ? ele.addEventListener(type, fn, false) : ele.attachEvent("on" + type, fn);
+			return this;
+		}
+	}
+	var la1 = new Layer("#icon");
+
+
+//图片的延迟加载
+	/***
+	 *节流延迟加载图片类 LazyLoad(id)
+	 *param id 				延迟加载图片的容器id
+	 *注：图片格式如下<img src="img/loading.git" alt="" data-src="img/1.jpg">
+	 ***/
+	function LazyLoad(id) {
+		//获取需要节流延迟加载图片的容器
+		this.container = document.getElementById(id);
+		//缓存图片
+		this.imgs = this.getImgs();
+		//执行逻辑
+		this.init();
+	}
+	//节流延迟加载图片类原型方法
+	LazyLoad.prototype = {
+		//起始执行逻辑
+		init: function() {
+			//加载当前视图图片,绑定事件
+			this.update();
+			this.bindEvent();
+		},
+		//获取延迟加载图片
+		getImgs: function() {
+			//新数组容器
+			var arr = [];
+			//获取图片
+			var imgs = this.container.getElementsByTagName("img");
+			//将获取的图片转化为数组（ie下通过Array.prototype.slice会报错）
+			for ( var i = 0, len = imgs.length; i < len; i++ ) {
+				arr.push(imgs[i]);
+			}
+			return arr;
+		},
+		//加载图片,遍历每一个图片元素，要是在可视区就加载它并从图片缓存中删除
+		update: function() {
+			//如果图片都加载完成，返回
+			if ( !this.imgs.length ) return;
+			//获取图片长度
+			var i = this.imgs.length;
+			//遍历图片
+			for ( --i; i >=0; i-- ) {
+				if ( this.shouldShow(i) ) {
+					//加载图片
+					this.imgs[i].src = this.imgs[i].getAttribute("data-src");
+					//清除缓存中的这个图片
+					this.imgs.splice(i, 1);
+				}
+			}
+		},
+		//判断图片是否在可视范围内
+		shouldShow: function(i) {
+			//获取当前图片
+			var img = this.imgs[i];
+			//可视范围内顶部高度（页面滚动条top值）
+			var scrollTop = document.documentElement.scrollTop || document.body.scrollTop,
+			//可视范围内底部高度
+				scrollBottom = scrollTop + document.documentElement.clientHeight,
+			//图片的顶部位置
+				imgTop = this.pageY(img),
+			//图片的底部位置
+				imgBottom = imgTop + img.offsetHeight;
+			//判断图片是否在可视范围内：图片底部高度大于可视区域顶部高度 且 图片底部高度小于可视区域底部高度
+			//	或者图片顶部高度大于可视区域顶部高度并且图片顶部高度小于可视区域底部高度
+			if ( (imgBottom > scrollTop && imgBottom < scrollBottom) || (imgTop > scrollTop && imgTop < scrollBottom) ) {
+				return true;
+			}
+			return false;
+
+		},
+		//获取元素页面中的纵坐标位置
+		pageY: function(element) {
+			//如果元素有父元素
+			if ( element.offsetParent ) {
+				//返回元素+父元素高度
+				return element.offsetTop + this.pageY(element.offsetParent);
+			} else {
+				//否则返回元素高度
+				return element.offsetTop;
+			}
+		},
+		//绑定事件（简化版）
+		on: function(element, type, fn) {
+			return element.addEventListener ? element.addEventListener(type, fn, false) : ( element.attachEvent ? element.attachEvent("on" + type, fn, false) : elment["on"+type] = fn);
+		},
+		//为窗口绑定resize和scroll事件,  对事件的回调函数做节流处理
+		bindEvent: function() {
+			var that = this;
+			this.on(window, "resize", function() {
+				//节流处理更新图片逻辑
+				throttle(that.update, { context: that});// context：that是在throttle中修改回调函数的作用域的。见throttle函数内部。
+			});
+			this.on(window, "scroll", function() {
+				//节流处理更新图片逻辑
+				throttle(that.update, { context: that});
+			});
+		}
+	}
+
+	//使用
+	new LazyLoad("icon");
+
+//统计打包
+	//打包统计对象
+	var LogPack = function() {
+		var data = [],					//请求缓存数组
+			MaxNum = 10,				//请求缓存最大值
+			itemSplitStr = "|",			//统计项统计参数间隔符
+			KeyValueSplitStr = "*",		//统计项统计参数键值对间隔符
+			img = new Image();			//请求触发器，通过图片src属性实现简单的get请求
+			function sendLog() {
+				//请求参数
+				var logStr = "",
+					fireData = data.splice(0, MaxNum);
+				//遍历统计项
+				for ( var i = 0, len = fireData.length; i < len; i++ ) {
+					//添加统计项顺序索引
+					logStr += "log" + i + "=";
+					//遍历统计项内的参数
+					for ( var j in fireData[i] ) {
+						//添加统计项参数见 + 间隔符 + 值
+						logStr += j + KeyValueSplitStr + fireData[i][j];
+						//添加统计项统计参数间隔符
+						logStr += itemSplitStr;
+					}
+					//用 & 拼接多个统计项
+					logStr = logStr.replace(/\|$/, "") + "&";
+				}
+				//添加统计项打包长度
+				logStr += "logLength=" + len;
+				console.log(logStr);
+				//请求触发器发送统计
+				img.src = "a.gif?" + logStr;
+			}
+			//统计方法
+			return function(param) {
+				//如果无参数则发送统计
+				if ( !param ) {
+					sendLog();
+					return;
+				}
+				//添加统计项
+				data.push(param);
+				//如果统计项的长度大于请求缓存最大值则发送统计请求包
+				data.length >= MaxNum && sendLog();
+			}
+	}();
+
+	//test
+	var btn = document.getElementById("btn");
+	btn.onclick = function() {
+		LogPack({
+			btnId: this.id,
+			context: this.innerHTML,
+			type: "click"
+		});
+	}
+</script>
+
+</body>
+</html>
