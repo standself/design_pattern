@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<title>惰性模式</title>
+	<meta charset="utf-8">
+	<style type="text/css">
+		p {
+			line-height: 15px;
+			color: blue;
+		}
+	</style>
+</head>
+<body>
+<h2>惰性模式</h2>
+<p>减少每次代码执行时的重复性判断，通过对对象的重定义来屏蔽原对象中的分支判断</p>
+<p>精髓在于如果第一次判断执行后，以后的再执行判断没必要的话，就在第一次判断执行后重新定义他。有2种实现方式：</p>
+<ul>
+	<li>在文件加载进来的时候，就通过<strong>闭包</strong>执行该方法进行重定义。但这样会在页面加载的时候就占用一定的资源。</li>
+	<li>在上面的基础上做延迟，把重定义延迟到第一次调用的时候，同时资源占用也被延迟到这时候。</li>
+</ul>
+<code>
+//第一种惰性加载，在最开始就重定义<br />
+&nbsp;&nbsp;//添加绑定事件方法<br />
+&nbsp;&nbsp;A.on = function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;if ( document.addEventListener ) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dom.addEventListener(type, fn, false);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;} else if ( document.attachEvent ) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dom.attachEvent("on" + type, fn);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} <br />
+&nbsp;&nbsp;&nbsp;&nbsp;} else {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dom["on" + type] = fn;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;}();<br />
+//第二种惰性加载，在调用的时候就重定义<br />
+&nbsp;&nbsp;//添加绑定事件方法<br />
+&nbsp;&nbsp;A.on = function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;if ( document.addEventListener ) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.on = function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dom.addEventListener(type, fn, false);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;} else if ( document.attachEvent ) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.on = function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dom.attachEvent("on" + type, fn);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;} else {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.on = function(dom, type, fn) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dom["on" + type] = fn;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;//在最后调用一下重定义的A.on.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;A.on(dom, type, fn);<br />
+&nbsp;&nbsp;}<br />
+</code>
+<h3>用途：浏览器的兼容性检测</h3>
+
+<script type="text/javascript">
+
+/***
+	//创建XHR对象
+	function createXHR() {
+		//标准浏览器
+		if ( typeof XMLHttpRequest != "undefined" ) {
+			return new XMLHttpRequest();
+		//ie 浏览器
+		} else if ( typeof ActiveXObject != "undefined" ) {
+			if ( typeof arguments.callee.activeXString != "string" ) {
+				var versions = ["MSXML2.XMLHttp.6.0", "msxml2.XMLHttp.3.0", "MSXML2.XMLHttp"],
+					i = 0,
+					len = versions.length;
+				//遍历并设置版本
+				for (; i < len; i++ ) {
+					try {
+						new ActiveXObject(versions[i]);
+						arguments.callee.activeXString = versions[i];
+						break;
+					} cacth(ex) {
+
+					}
+				}
+			}
+			return new ActiveXObject(arguments.callee.activeXString);
+		//对不支持的浏览器抛出错误提示
+		} else {
+			throw new Error("您的浏览器并不支持ajax。");
+		}
+	}
+
+	//创建XHR对象，第一种惯性模式
+	var createXHR = (function() {
+		if ( typeof XMLHttpRequest != "undefined" ) {
+			return function() {
+				new XMLHttpRequest();
+			};
+		} else if ( typeof ActiveXObject != "undefined" ) {
+			return function() {
+				if ( typeof arguments.callee.activeXString != "string" ) {
+					var versions = ["MSXML2.XMLHttp.6.0", "msxml2.XMLHttp.3.0", "MSXML2.XMLHttp"],
+						i = 0,
+						len = versions.length;
+					//遍历并设置版本
+					for (; i < len; i++ ) {
+						try {
+							new ActiveXObject(versions[i]);
+							arguments.callee.activeXString = versions[i];
+							break;
+						} cacth(ex) {
+
+						}
+					}
+				}
+				return new ActiveXObject(arguments.callee.activeXString);
+			};
+		} else {
+			return function() {
+				throw new Error("no xhr object avaliable");
+			};
+		}
+	})();
+
+	//创建XHR对象，第二种惯性模式
+	function createXHR() {
+		if ( typeof XMLHttpRequest != "undefined" ) {
+			createXHR = function() {
+				return new XMLHttpRequest();
+			};
+		} else if ( typeof ActiveXObject != "undefined" ) {
+			createXHR = function() {
+				if ( typeof arguments.callee.activeXString != "string" ) {
+					var versions = ["MSXML2.XMLHttp.6.0", "msxml2.XMLHttp.3.0", "MSXML2.XMLHttp"],
+						i = 0,
+						len = versions.length;
+					//遍历并设置版本
+					for (; i < len; i++ ) {
+						try {
+							new ActiveXObject(versions[i]);
+							arguments.callee.activeXString = versions[i];
+							break;
+						} cacth(ex) {
+
+						}
+					}
+				}
+				return new ActiveXObject(arguments.callee.activeXString);
+			}
+		} else {
+			createXHR = function() {
+				throw new Error("no XHR object avaliable");
+			}
+		}
+		return createXHR();
+	}
+***/
+
+//惰性模式获取元素css样式, 获取具体的属性时，只能通过直接的点语法或者直接字面量的中括号获取。
+	var getStyle = function(ele) {
+		//function(ele, style)
+		if ( document.currentStyle ) {
+			return function(ele) {
+				var totalStyle = ele.currentStyle;
+				return totalStyle;
+				//return totalStyle[style] 返回的是undefined。下同。
+			};
+		} else if ( document.defaultView.getComputedStyle ) {
+			return function(ele) {
+				var totalStyle = document.defaultView.getComputedStyle(ele, null);
+				//window.getComputedStyle(ele, null);
+				return totalStyle;
+			};
+		} else {
+			throw new Error("no method to get style of aim element.");
+		}
+	}();
+	//test
+	var p = document.getElementsByTagName("p")[0];
+	var pStyle = getStyle(p),
+		color = "color";
+	console.log(pStyle.color);
+	console.log(pStyle[color]);
+</script>
+</body>
+</html>
