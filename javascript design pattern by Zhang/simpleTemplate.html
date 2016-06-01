@@ -90,7 +90,7 @@
 			//渲染模块并掺入模块中
 			s.innerHTML = formateString(tpl, data.data);
 			A.root.appendChild(s);
-		}
+		},
 		"codePart": function() {},
 		"onlyTitle": function() {},
 		"guide": function() {}
@@ -139,7 +139,29 @@
 			var tpl = A.view(["h2", "p", "ul"]),
 				liTpl = A.formateString(A.view("li"), {li: A.view(["strong", "span"])});
 		 }
+		 ***/
 	}
+
+//简单模板模式创建导航条
+	var navLi = function(data) {
+		var liTpl = "<li>{#li#}</li>";
+		function formateStr(str, data) {
+			return str.replace(/\{#(\w+)#\}/, data);
+		}
+		var str = "";
+		if ( Object.prototype.toString.call(data) === "[object Array]" ) {
+			for ( var i = 0, len = data.length; i < len; i++ ) {
+				str += formateStr(liTpl, data[i]);
+			}
+		}
+		return str;
+	}
+	var data = ["home", "page1", "game", "about"];
+	data = navLi(data);
+	var ul = document.createElement("ul");
+	ul.innerHTML = data;
+	var body = document.getElementsByTagName("body")[0];
+	body.appendChild(ul);
 </script>
 
 </body>
