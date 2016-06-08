@@ -1,14 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>异步模块模式-AMD</title>
+	<title>widget模式</title>
 	<meta charset="utf-8"/>
 </head>
 <body>
-<div id="demo">demo</div>
-<script type="text/javascript">
+<div id="test"></div>
+<div id="demo_tag" class="template">
+	<div id="tag_cloud">
+		{% for(var i = 0, len = tagCloud.length; i < len; i++) {
+			var ctx = tagCloud[i];%}
+			<a href="#" class="tag_item
+			{% if(ctx['is_selected']){ %}
+				selected
+			{% } %}
+			" title="{%=ctx["title"]%}">{%=ctx["text"]%}</a>
+		{% } %}
+	</div>
+</div>
 
-//闭包环境
+<textarea id="demo_textarea" class="template">
+	<div id="tag_cloud">
+		{% for(var i = 0, len = tagCloud.length; i < len; i++) {
+			var ctx = tagCloud[i];%}
+			<a href="#" class="tag_item
+			{% if(ctx["is_selected"]){ %}
+				selected
+			{% } %}
+			" title="{%=ctx["title"]%}">{%=ctx["text"]%}</a>
+		{% } %}
+	</div>
+</textarea>
+
+<script type="text/template" id="demo_script">
+	<div id="tag_cloud">
+		{% for(var i = 0, len = tagCloud.length; i < len; i++) {
+			var ctx = tagCloud[i];%}
+			<a href="#" class="tag_item
+			{% if(ctx["is_selected"]){ %}
+				selected
+			{% } %}
+			" title="{%=ctx["title"]%}">{%=ctx["text"]%}</a>
+		{% } %}
+	</div>
+</script>
+<script type="text/javascript">
+	//闭包环境
 	//向闭包中传入模块管理器对象F（~屏蔽压缩文件时，前面漏写;报错。)
 ~(function(F) {
 	//模块缓存器，存储已经创建的模块
@@ -147,18 +184,19 @@
 	return window.F = {};
 })());
 
-	//test，在lib/dom.js中定义dom模块
+var data = {
+	tagCloud: [
+		{is_selected:true, title:"这是一本设计模式书", text:"设计模式"},
+		{is_selected:false, title:"这是一本HTML书", text:"HTML"},
+		{is_selected:null, title:"这是一本css书", text:"css"},
+		{is_selected:"", title:"这是一本javascript书", text:"javascript"},
+	]
+};
+F.module(["lib/widget", "lib/dom"], function(widget, dom) {
+	var str = widget("demo_tag", data);
+	dom.html("test", str);
+});
 	
-
-	
-	console.log("here2");	
-	//在index.html中
-	F.module(["lib/event", "lib/dom"], function(events, dom) {
-		console.log("here");
-		events.on("demo", "click", function() {
-			dom.html("demo", "success");
-		})
-	});
 </script>
 </body>
 </html>

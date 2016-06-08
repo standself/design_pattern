@@ -6,6 +6,7 @@ F.module("lib/dom", function() {
 			},
 			//获取或者设置元素的内容方法
 			html: function(id, html) {
+				console.log(id);
 				if (html) {
 					this.g(id).innerHTML = html;
 				} else {
