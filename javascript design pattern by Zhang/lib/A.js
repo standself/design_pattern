@@ -346,4 +346,183 @@
  		 }
  	});
 	//运动框架单体对象
- })
+	var Tween = {
+		//计时器句柄
+		timer: 0,
+		//运动成员队列
+		queen: [],
+		//运动间隔
+		interval: 16,
+		//缓冲函数
+		easing: {
+			//默认运动缓存算法 匀速运动
+			def: function(time, startValue, changeValue, duration) {
+				return changeValue * time / duration + startValue;
+			},
+			//缓慢结束
+			easeOutQuart: function(time, startValue, changeValue, duration) {
+				return -changeValue * ( (time=time/duration-1) * time * time *time -1)  + startValue; 
+			}
+		},
+		/***
+		 * @name 	添加运动成员
+		 * @param instance 	运动成员
+		 ***/
+		add: function(instance) {
+			//添加成员
+			this.queen.push(instance);
+			//运行框架
+			this.run();
+		},
+		/***
+		 * @name 	停止框架运行
+		 ***/
+		clear: function() {
+			clearInterval(this.timer);
+			this.timer = 0;
+		},
+		/***
+		 * @name 	运行框架
+		 ***/
+		run: function() {
+			//如果在运行则返回
+			if ( this.timer ) return;
+			//重置计时器
+			this.clear();
+			//运行框架
+			this.timer = setInterval(this.loop, this.interval);
+		},
+		/***
+		 * @name 运动框架循环方法
+		 ***/
+		loop: function() {
+			//如果运动队列中没有成员
+			if ( Tween.queen.length === 0 ) {
+				//停止框架运行
+				Tween.claer();
+				return;
+			}
+			//获取当前时间
+			var now = +new Date();
+			//遍历运动成员
+			for ( var i = Tween.queen.length - 1; i >= 0; i-- ) {
+				//获取当前成员
+				var instance = Tween.queen[i];
+				//当前成员已运动的时间
+				instance.passed = now - instance.start;
+				//如果当前成员已运动的时间小于当前成员运动时间
+				if ( instance.passed < instance.duration ) {
+					//执行当前成员主函数
+					Tween.workFn(instance);
+				} else {
+					//结束当前成员运行
+					Tween.endFn(instance);
+				}
+			}
+		},
+		/***
+		 * @name 	运行方法
+		 * @param 	instance 运动成员
+		 ***/
+		workFn: function(instance) {
+			//获取当前成员在当前时刻下的运动进程
+			instance.tween = this.easing[instance.type](instance.passed, instance.from, instance.to - instance.from, instance.duration);
+			//执行主函数
+			this.exec(instance);
+		},
+		/***
+		 * @name 	 结束方法
+		 * @param 	instance 	运动成员
+		 ***/
+		endFn: function(instance) {
+			instance.passed = instance.duration;
+			instance.tween = instance.to;
+			this.exec(instance);
+			this.distory(instance);
+		},
+		/***
+		 * @name 	执行主函数
+		 * @param 	instance 运动成员
+		 ***/
+		exec: function(instance) {
+			try {
+				//执行当前成员主函数 
+				instance.main(instance.dom);
+			} catch(e) {}
+		},
+		/***
+		 * @name 	注销运动成员
+		 * @param 	instance 运动成员
+		 ***/
+		distory: function(instance) {
+			//结束当前成员
+			instance.end();
+			//在运动成员队列中删除该成员
+			this.queen.splice(this.queen.indexOf(instance), 1);
+			//删除成员中的每一个属性
+			for ( var i in instance ) {
+				delete instance[i];
+			}
+		}
+	}
+	/***
+	 * @name 	 获取当前成员在运动成员中的位置
+	 * @param instance 	运动成员
+	 ***/
+	Tween.queen.indexOf = function() {
+		var that = this;
+		//如果有该方法则返回，如果没有则创建一个方法
+		return Tween.queen.indexOf || function(instance) {
+			//遍历每一个成员
+			for ( var i = 0, len = that.length; i < len; i++ ) {
+				//如果该成员是需求成员则返回该成员在队列中的位置
+				if ( that[i] === instance ) {
+					return i;
+				}
+			}
+			//否则返回-1，表示不存在
+			return -1;
+		}
+	}();
+	//A.fn对象拓展方法 
+	A.fn.extend({
+		/***
+		 * @name  	动画模块
+		 * @param obj 动画成员对象
+		 ***/
+		animate: function(obj) {
+			//适配运动对象
+			var obj = A.extedn({
+				duration: 400, 		//默认运行时间
+				type: "def", 		//默认动画缓存函数
+				from: 0, 			//开始点
+				to: 1, 				//结束点
+				start: +new Date(), //开始时间
+				dom: this, 			//当前元素
+				main: function() {}, //运行主函数
+				end: function() {}, //结束函数
+			}, obj);
+			//向运动框架中载入运动对象成员
+			Tween.add(obj);
+		}
+	});
+	/***
+	 * @name 避免框架别名冲突（主要用于页面中引入多核框架）
+	 * @param library 	 其他框架
+	 ***/
+	A.noConflict = function(library) {
+		//如果传递其他框架
+		if ( library ) {
+			//为library绑定$别名
+			widow.$ = library;
+		} else {
+			//否则删除$别名
+			window.$ = null;
+			delete window.$;
+		}
+		//返回A对象
+		return A;
+	}
+	//为全局对象绑定A框架，并绑定别名$
+	window.$ = window.A = A;
+ })(window);
