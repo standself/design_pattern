@@ -10,7 +10,7 @@
  	 * @param 	context 	查找元素上下文
  	 ***/
  	var A = function(selector, context) {
- 		//如果selector为方法则为窗口添加页面加载完成时间监听
+ 		//如果selector为方法则为窗口添加页面加载完成事件监听
  		if ( typeof selector == "function" ) {
  			A(window).on("load", selector);
  		} else {
@@ -18,14 +18,15 @@
  			return new A.fn.init(selector, context);
  		}
   	}
- 	//原型方法
+ 	//原型方法.加上下面的设置构造函数原型。这样做的目的是使得在不进行选择元素时，能调用A原型内的函数。
+ 	//而且这样做，使得extend拓展的方法在A、A的prototype、A.fn、A.fn.init乃至A.fn.init.prototype上都有该方法的引用。
  	A.fn = A.prototype = {
  		//强化构造函数
  		constructor: A,
  		//构造函数
  		init: function(selector, context) {
- 			//modify选择器为元素
- 			if ( typeof selector == "object" ) {
+ 			//选择器为元素的话，就直接返回。
+ 			if ( typeof selector === "object" ) {
  				this[0] = selector;
  				this.length = 1;
  				return this;
@@ -47,7 +48,7 @@
  				} else {
  					doms = context.getElementsByTagName("*");
  				}
- 				//设置获取到的元素
+ 				//设置获取到的元素.~按位非操作，对数值x按位非操作得到-(x+1)。！非操作：如果表达式可以变为true，就返回false（null，0，“”，undefined可以变为false）。
  				for ( var i = 0, len = doms.length; i < len; i++ ) {
  					if ( doms[i].className && !!~doms[i].className.indexOf(className) ) {
  						this[this.length] = doms[i];
@@ -71,7 +72,7 @@
  			this.selector = selector;
  			return this;
  		},
- 		//元素长度
+ 		//元素长度，selector如果既不是对象也不是选择器的话。
  		length: 0,
  		//增强数组
  		push: [].push,
@@ -112,7 +113,7 @@
  		 * eg: "test-demo" -> "testDemo"
  		 ***/
  		camelCase: function(str) {
- 			return str.replace(/\-(\w)/g, function(match, letter) {
+ 			return str.replace(/\-|_(\w)/g, function(match, letter) {
  				return letter.toUpperCase();
  			});
  		},
@@ -138,7 +139,7 @@
  		 * @param data 	渲染数据
  		 * eg: "<div>{#value#}</div>" + {value:"test"} -> "<div>test</div>"
  		 ***/
- 		 formateString: function(str, data) {
+ 		formateString: function(str, data) {
  		 	var html = "";
  		 	if ( data instanceof Array ) {
  		 		for ( var i = 0, len = data.length; i < len; i++ ) {
@@ -153,15 +154,15 @@
  		 	}
  		 }
  	});
- 	//事件绑定方法
+ 	//事件绑定方法--惰性模式之加载即执行。
  	var _on = (function() {
  		//如果标准浏览器
  		if ( document.addEventListener ) {
  			return function(dom, type, fn, data) {
- 				dom.addEventListener(type, funciton(e) {
+ 				dom.addEventListener(type, function(e) {
  					fn.call(dom, e, data);
  				}, false);
- 			}
+ 			};
  		//如果是ie浏览器
  		} else if ( document.attachEvent ) {
  			return function(dom, type, fn, data) {
@@ -183,7 +184,7 @@
  		on: function(type, fn, data) {
  			var i = this.length;
  			for(; --i >= 0;) {
- 				//通过闭包实现对i变量保存
+ 				//通过闭包实现对i变量保存。因为_on函数已经执行了，所以i的闭包不是最终值。。
  				_on(this[i], type, fn, data);
  			}
  			return this;
@@ -198,30 +199,32 @@
  			}
  			//如果是一个参数 
  			if ( len === 1 ) {
- 				//如果参数是字符串则返回获取到的第一个元素的样式
+ 				//如果参数是字符串则返回获取到的第一个元素的样式。注意，是第一个。因为A初始选择到的元素可能不止一个。
+ 				//style的浏览器兼容
  				if ( typeof arg[0] === "string" ) {
  					//ie浏览器
  					if ( this[0].currentStyle ) {
- 						return this[0].currentStyle[name];
+ 						return this[0].currentStyle[arg[0]];
  					} else {
- 						return getComputedStyle(this[0], false)[name];
+ 						return getComputedStyle(this[0], false)[arg[0]];
  					}
- 				//如果参数为对象则为获取到的所有元素设置 样式
+ 				//如果参数为对象则为获取到的所有元素设置样式
  				} else if ( typeof arg[0] === "object" ) {
  					for ( var i in arg[0] ) {
  						for ( var j = this.length - 1; j >= 0; j-- ) {
+ 							//将某些比如background-color转化为backgroundColor
  							this[j].style[A.camelCase(i)] = arg[0][i];
  						}
  					}
- 				//如果两个参数
- 				} else if ( len === 2 ) {
- 					//为获取到的所有元素设置样式
- 					for ( var j = this.length - 1; j >= 0; j-- ) {
- 						this[j].style[A.camelCase(arg[0])] = arg[1];
- 					}
  				}
- 				return this;
+ 			//如果两个参数
+ 			} else if ( len === 2 ) {
+ 				//为获取到的所有元素设置样式
+ 				for ( var j = this.length - 1; j >= 0; j-- ) {
+ 					this[j].style[A.camelCase(arg[0])] = arg[1];
+ 				}
  			}
+ 			return this;
  		},
  		//设置或者获取元素属性
  		attr: function() {
@@ -237,7 +240,7 @@
  				} else if ( typeof arg[0] === "object" ) {
  					for ( var i in arg[0] ) {
  						for ( var j = this.length - 1; j >= 0; j-- ) {
- 							this[j].setAttribute(arg[0], arg[1]);
+ 							this[j].setAttribute(i, arg[0][i]);
  						}
  					}
  				}
@@ -284,7 +287,7 @@
  			//类名去除首尾空白符
  			var value = A.trim(val);
  			//如果获取到的第一个元素类名包含val则返回true，否则就返回false
- 			return this[0].className && this[0].className.indexOf(value)>=0 ? true :false;
+ 			return this[0].className && this[0].className.indexOf(value) >= 0 ? true :false;
  		},
  		/***
  		 * @name 	 添加类
@@ -296,7 +299,7 @@
  		 	//遍历所有获取到的元素
  		 	for ( var i = 0, len = this.length; i < len; i++ ) {
  		 		str = this[i].className;
- 		 		//如果元素类名包含添加类，则为元素添加类
+ 		 		//如果元素类名不包含添加类，则为元素添加类
  		 		if ( !~str.indexOf(value) ) {
  		 			this[i].className += " " + value;
  		 		}
@@ -313,9 +316,10 @@
  		 		result;					//元素类名最终结果
  		 	//遍历所有获取到的值
  		 	for ( var i = 0, len = this.length; i < len; i++ ) {
+ 		 		//如果类名包含了删除类
  		 		if ( this[i].className && ~this[i].className.indexOf(value) ) {
  		 			//通过空格符将元素类名切割成数组
- 		 			 classNameArr = this[i].className.split(" ");
+ 		 			classNameArr = this[i].className.split(" ");
  		 			result = "";
  		 			//遍历类名
  		 			for ( var j = classNameArr.length - 1; j >= 0; j-- ) {
