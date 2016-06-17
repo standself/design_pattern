@@ -349,6 +349,7 @@
  		 	}
  		 }
  	});
+
 	//运动框架单体对象
 	var Tween = {
 		//计时器句柄
@@ -475,7 +476,7 @@
 	 ***/
 	Tween.queen.indexOf = function() {
 		var that = this;
-		//如果有该方法则返回，如果没有则创建一个方法
+		//如果有该方法则返回，如果没有则创建一个方法。短值法。
 		return Tween.queen.indexOf || function(instance) {
 			//遍历每一个成员
 			for ( var i = 0, len = that.length; i < len; i++ ) {
@@ -496,7 +497,7 @@
 		 ***/
 		animate: function(obj) {
 			//适配运动对象
-			var obj = A.extedn({
+			var obj = A.extend({
 				duration: 400, 		//默认运行时间
 				type: "def", 		//默认动画缓存函数
 				from: 0, 			//开始点
